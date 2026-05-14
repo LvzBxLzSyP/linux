@@ -1,0 +1,114 @@
+name: Linux Kernel Build Matrix
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-zen
+            repo: zen-kernel/zen-kernel
+            ref: zen-kernel/latest
+
+          - name: linux-hardened
+            repo: anthraxx/linux-hardened
+            ref: linux-hardened
+
+          - name: linux-rt
+            url: https://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-rt-devel.git
+            ref: v7.1-rc1-rt1
+
+          - name: linux-xanmod
+            repo: xanmod/linux
+            ref: main
+
+          - name: linux-stable
+            repo: gregkh/linux
+            ref: linux-6.12.y
+            
+          - name: linux-cachyos
+            repo: CachyOS/linux
+            ref: 7.1/cachy
+          
+          - name: linux-cachyos-rt
+            repo: CachyOS/linux
+            ref: 7.1/rt
+          
+          - name: linux-cachyos-handheld
+            repo: CachyOS/linux
+            ref: 7.1/handheld
+            
+          - name: linux-mainline
+            repo: torvalds/linux
+            ref: master
+
+          - name: linux-latest
+            repo: gregkh/linux
+            ref: linux-7.0.y
+
+          - name: linux-lts
+            repo: gregkh/linux
+            ref: linux-6.12.y
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential bc kmod cpio flex \
+            libncurses-dev libelf-dev libssl-dev \
+            bison dwarves zstd ccache
+
+      - name: Checkout (GitHub)
+        if: matrix.repo != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.ref }}
+          depth: 1
+
+      - name: Checkout (kernel.org)
+        if: matrix.url != ''
+        run: |
+          git clone --depth 1 --branch ${{ matrix.ref }} \
+            ${{ matrix.url }} .
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.name }}
+          max-size: 5G
+
+      - name: Configure
+        run: |
+          export CC="ccache gcc"
+          make defconfig
+          make olddefconfig
+
+      - name: Build
+        run: |
+          export CC="ccache gcc"
+          make -j$(nproc) bzImage modules
+
+      - name: Show kernel version
+        run: make kernelversion
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            arch/x86/boot/bzImage
+            System.map
+            .config
+          retention-days: 7
+          
