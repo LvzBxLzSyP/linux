@@ -21,15 +21,15 @@ jobs:
 
           - name: linux-hardened
             repo: anthraxx/linux-hardened
-            ref: linux-hardened
+            ref: v6.19.10-hardened1
 
           - name: linux-rt
             url: https://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-rt-devel.git
             ref: v7.1-rc1-rt1
 
           - name: linux-xanmod
-            repo: xanmod/linux
-            ref: main
+            url: https://gitlab.com/xanmod/linux.git
+            ref: "7.0"
 
           - name: linux-cachyos
             repo: CachyOS/linux
@@ -62,7 +62,7 @@ jobs:
         with:
           repository: ${{ matrix.repo }}
           ref: ${{ matrix.ref }}
-          depth: 1
+          fetch-depth: 1
 
       - name: Checkout (kernel.org)
         if: matrix.url != ''
