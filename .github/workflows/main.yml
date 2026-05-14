@@ -17,7 +17,7 @@ jobs:
         include:
           - name: linux-zen
             repo: zen-kernel/zen-kernel
-            ref: zen-kernel/latest
+            ref: 7.0/main
 
           - name: linux-hardened
             repo: anthraxx/linux-hardened
@@ -31,22 +31,10 @@ jobs:
             repo: xanmod/linux
             ref: main
 
-          - name: linux-stable
-            repo: gregkh/linux
-            ref: linux-6.12.y
-            
           - name: linux-cachyos
             repo: CachyOS/linux
-            ref: 7.1/cachy
-          
-          - name: linux-cachyos-rt
-            repo: CachyOS/linux
-            ref: 7.1/rt
-          
-          - name: linux-cachyos-handheld
-            repo: CachyOS/linux
-            ref: 7.1/handheld
-            
+            ref: 7.0/cachy
+
           - name: linux-mainline
             repo: torvalds/linux
             ref: master
@@ -111,4 +99,3 @@ jobs:
             System.map
             .config
           retention-days: 7
-          
