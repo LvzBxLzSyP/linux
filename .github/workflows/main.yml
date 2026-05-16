@@ -136,6 +136,10 @@ jobs:
             scripts/config --enable CONFIG_XEN_GRANT_DEV_ALLOC
             scripts/config --enable CONFIG_XENFS
 
+            # Disable runner certs
+            scripts/config --set-str CONFIG_SYSTEM_TRUSTED_KEYS ""
+            scripts/config --set-str CONFIG_SYSTEM_REVOCATION_KEYS ""
+
             make olddefconfig
           fi
 
