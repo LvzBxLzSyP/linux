@@ -2,6 +2,8 @@ name: Linux Kernel Build Matrix
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
   build:
@@ -59,7 +61,7 @@ jobs:
             build-essential bc kmod cpio flex \
             libncurses-dev libelf-dev libssl-dev \
             bison dwarves zstd ccache \
-            libdwarf-dev
+            libdw-dev
 
       - name: Checkout (GitHub)
         if: matrix.repo != ''
