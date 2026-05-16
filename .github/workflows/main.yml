@@ -2,8 +2,6 @@ name: Linux Kernel Build Matrix
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 jobs:
   build:
@@ -60,7 +58,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential bc kmod cpio flex \
             libncurses-dev libelf-dev libssl-dev \
-            bison dwarves zstd ccache
+            bison dwarves zstd ccache \
+            libdwarf-dev
 
       - name: Checkout (GitHub)
         if: matrix.repo != ''
