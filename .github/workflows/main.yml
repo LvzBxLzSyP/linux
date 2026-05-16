@@ -47,6 +47,12 @@ jobs:
             repo: gregkh/linux
             ref: linux-6.12.y
 
+          - name: linux-wsl
+            repo: microsoft/WSL2-Linux-Kernel
+            ref: linux-msft-wsl-6.6.y
+            config: Microsoft/config-wsl
+            binder: true
+
     steps:
       - name: Install dependencies
         run: |
@@ -79,13 +85,70 @@ jobs:
       - name: Configure
         run: |
           export CC="ccache gcc"
-          make defconfig
-          make olddefconfig
+          if [ -n "${{ matrix.config }}" ]; then
+            cp ${{ matrix.config }} .config
+
+            # Binder / Waydroid support (WSL)
+            if [ "${{ matrix.binder }}" = "true" ]; then
+              scripts/config --enable CONFIG_ANDROID
+              scripts/config --enable CONFIG_ANDROID_BINDER_IPC
+              scripts/config --set-str CONFIG_ANDROID_BINDER_DEVICES "binder,hwbinder,vndbinder"
+              scripts/config --enable CONFIG_ANDROID_BINDERFS
+              scripts/config --enable CONFIG_STAGING
+              scripts/config --enable CONFIG_ASHMEM
+            fi
+
+            make olddefconfig
+          else
+            cp /boot/config-$(uname -r) .config
+
+            # Virtio (KVM/QEMU)
+            scripts/config --enable CONFIG_VIRTIO
+            scripts/config --enable CONFIG_VIRTIO_PCI
+            scripts/config --enable CONFIG_VIRTIO_BLK
+            scripts/config --enable CONFIG_VIRTIO_NET
+            scripts/config --enable CONFIG_VIRTIO_CONSOLE
+
+            # VMware / open-vm-tools
+            scripts/config --enable CONFIG_HYPERVISOR_GUEST
+            scripts/config --enable CONFIG_PARAVIRT
+            scripts/config --enable CONFIG_VMWARE_VMCI
+            scripts/config --enable CONFIG_VMWARE_VMCI_VSOCKETS
+            scripts/config --enable CONFIG_VSOCKETS
+            scripts/config --enable CONFIG_VMWARE_BALLOON
+            scripts/config --enable CONFIG_VMWARE_PVSCSI
+            scripts/config --enable CONFIG_VMXNET3
+            scripts/config --enable CONFIG_DRM_VMWGFX
+            scripts/config --enable CONFIG_FUSE_FS
+
+            # VirtualBox
+            scripts/config --enable CONFIG_VBOXGUEST
+
+            # Xen / Oracle VM
+            scripts/config --enable CONFIG_XEN
+            scripts/config --enable CONFIG_XEN_BALLOON
+            scripts/config --enable CONFIG_XEN_DEV_EVTCHN
+            scripts/config --enable CONFIG_XEN_NETDEV_FRONTEND
+            scripts/config --enable CONFIG_XEN_BLKDEV_FRONTEND
+            scripts/config --enable CONFIG_XEN_PCIDEV_FRONTEND
+            scripts/config --enable CONFIG_XEN_GNTDEV
+            scripts/config --enable CONFIG_XEN_GRANT_DEV_ALLOC
+            scripts/config --enable CONFIG_XENFS
+
+            make olddefconfig
+          fi
 
       - name: Build
         run: |
           export CC="ccache gcc"
           make -j$(nproc) bzImage modules
+
+      - name: Install modules and headers
+        run: |
+          make INSTALL_MOD_PATH=$PWD/out/modules modules_install
+          make INSTALL_HDR_PATH=$PWD/out/headers headers_install
+          tar -C $PWD/out/modules -acf modules.tar.zst .
+          tar -C $PWD/out/headers -acf headers.tar.zst .
 
       - name: Show kernel version
         run: make kernelversion
@@ -98,4 +161,6 @@ jobs:
             arch/x86/boot/bzImage
             System.map
             .config
+            modules.tar.zst
+            headers.tar.zst
           retention-days: 7
